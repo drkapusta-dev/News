@@ -19,35 +19,88 @@ class WordPressDraftResult:
     status: str
 
 
-def build_draft_payload(item: ProcessedItem) -> dict[str, object]:
-    summary_en = item.summary_en or ""
-    summary_hr = item.summary_hr or ""
+def _build_summary_only_content(item: ProcessedItem) -> str:
+    summary_hr = (item.summary_hr or "").strip()
+    summary_en = (item.summary_en or "").strip()
+    why_matters = "Ova tema je važna jer može utjecati na poslovne odluke, tržište i operativne prioritete."
 
-    content_blocks = [
-        f"<p><strong>Source:</strong> <a href=\"{item.item.link}\">{item.item.link}</a></p>",
-        f"<p>{summary_en}</p>",
-        f"<p>{summary_hr}</p>",
+    blocks = [
+        "<p><strong>Kratki uvod:</strong> U nastavku donosimo sažetak ključnih informacija iz izvora.</p>",
+        f"<p><strong>Sažetak (HR):</strong> {summary_hr}</p>",
+        f"<p><strong>Zašto je važno:</strong> {why_matters}</p>",
+        f"<p><strong>Izvor:</strong> {item.item.source_name}</p>",
+        f"<p><strong>Original URL:</strong> <a href=\"{item.item.link}\">{item.item.link}</a></p>",
     ]
+    if summary_en:
+        blocks.append(f"<p><strong>English summary:</strong> {summary_en}</p>")
+    return "\n".join(blocks)
 
-    return {
-        "title": item.item.title,
+
+def _build_full_publish_content(item: ProcessedItem) -> str:
+    return "\n".join(
+        [
+            "<p><strong>Uvod (HR):</strong> Cjelovitiji prikaz sadržaja za urednički pregled.</p>",
+            f"<p><strong>Sažetak (HR):</strong> {(item.summary_hr or '').strip()}</p>",
+            f"<p><strong>Summary (EN):</strong> {(item.summary_en or '').strip()}</p>",
+            f"<p><strong>Original naslov:</strong> {item.item.title}</p>",
+            f"<p><strong>Sadržaj:</strong> {item.item.content[:1200]}</p>",
+            f"<p><strong>Izvor:</strong> {item.item.source_name}</p>",
+            f"<p><strong>Original URL:</strong> <a href=\"{item.item.link}\">{item.item.link}</a></p>",
+        ]
+    )
+
+
+def build_draft_payload(item: ProcessedItem) -> dict[str, object] | None:
+    if item.item.rights_mode == "disabled":
+        return None
+
+    title = item.item.title.strip()
+    if not title:
+        return None
+
+    if item.item.rights_mode == "summary_only":
+        content = _build_summary_only_content(item)
+    else:
+        content = _build_full_publish_content(item)
+
+    content = content.strip()
+    if not content:
+        return None
+
+    payload: dict[str, object] = {
+        "title": title,
         "status": "draft",
-        "content": "\n".join(content_blocks),
+        "content": content,
         "meta": {
             "source_name": item.item.source_name,
             "source_url": item.item.link,
             "rights_mode": item.item.rights_mode,
         },
     }
+    return payload
+
+
+def _validate_payload(payload: dict[str, object] | None) -> bool:
+    if payload is None:
+        return False
+    status = payload.get("status")
+    if status != "draft":
+        return False
+    title = str(payload.get("title", "")).strip()
+    content = str(payload.get("content", "")).strip()
+    return bool(title and content)
 
 
 def create_draft(config: WordPressConfig, item: ProcessedItem, timeout: int = 20) -> WordPressDraftResult:
     if config.default_status != "draft":
         raise ValueError("Safety check failed: WordPress posts must remain drafts.")
 
-    url = f"{config.base_url}/wp-json/wp/v2/posts"
     payload = build_draft_payload(item)
-    payload["status"] = "draft"
+    if not _validate_payload(payload):
+        logger.error("Skipping malformed or empty WordPress payload for link=%s", item.item.link)
+        raise ValueError("Malformed WordPress payload")
+
+    url = f"{config.base_url}/wp-json/wp/v2/posts"
 
     auth_raw = f"{config.username}:{config.app_password}".encode("utf-8")
     auth_header = base64.b64encode(auth_raw).decode("ascii")

@@ -16,6 +16,11 @@ def _strip_html(text: str) -> str:
 
 
 def fetch_feed_items(source: SourceConfig, timeout: int = 20) -> list[FeedItem]:
+    if source.source_type not in {"rss", "medium_rss"}:
+        raise ValueError(f"Unsupported feed fetch for source_type={source.source_type!r}")
+    if not source.rss_url:
+        raise ValueError(f"Missing rss_url for source {source.name!r}")
+
     with urlopen(source.rss_url, timeout=timeout) as response:  # noqa: S310
         content = response.read()
 
