@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sqlite3
 
-from .models import ProcessedItem
+from .models import FeedItem, ProcessedItem
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +52,34 @@ def mark_wordpress_draft(
         """,
         (post_id, status, dedupe_key),
     )
+
+
+def get_pending_wordpress_items(conn: sqlite3.Connection) -> list[ProcessedItem]:
+    rows = conn.execute(
+        """
+        SELECT source_name, source_url, external_id, title, link, published_at, content,
+               summary_en, summary_hr, rights_mode, dedupe_key
+        FROM items
+        WHERE wordpress_post_id IS NULL
+        ORDER BY id ASC
+        """
+    ).fetchall()
+
+    return [
+        ProcessedItem(
+            item=FeedItem(
+                source_name=row["source_name"],
+                source_url=row["source_url"],
+                external_id=row["external_id"],
+                title=row["title"],
+                link=row["link"],
+                published_at=row["published_at"],
+                content=row["content"] or "",
+                rights_mode=row["rights_mode"],
+            ),
+            dedupe_key=row["dedupe_key"],
+            summary_en=row["summary_en"],
+            summary_hr=row["summary_hr"],
+        )
+        for row in rows
+    ]

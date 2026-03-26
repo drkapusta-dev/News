@@ -5,7 +5,7 @@ from poslovnipuls_pipeline.models import FeedItem, ProcessedItem
 from poslovnipuls_pipeline.wordpress import build_draft_payload, create_draft
 
 
-def _processed_item() -> ProcessedItem:
+def _processed_item(rights_mode: str = "summary_only") -> ProcessedItem:
     feed_item = FeedItem(
         source_name="Example",
         source_url="https://example.com/rss",
@@ -14,7 +14,7 @@ def _processed_item() -> ProcessedItem:
         link="https://example.com/post",
         published_at=None,
         content="long content",
-        rights_mode="summary_only",
+        rights_mode=rights_mode,
     )
     return ProcessedItem(
         item=feed_item,
@@ -24,12 +24,27 @@ def _processed_item() -> ProcessedItem:
     )
 
 
-def test_build_draft_payload_always_draft() -> None:
-    payload = build_draft_payload(_processed_item())
+def test_build_draft_payload_summary_only_structure() -> None:
+    payload = build_draft_payload(_processed_item("summary_only"))
 
+    assert payload is not None
     assert payload["status"] == "draft"
-    assert "English summary" in payload["content"]
-    assert "https://example.com/post" in payload["content"]
+    assert "Sažetak (HR)" in str(payload["content"])
+    assert "Zašto je važno" in str(payload["content"])
+    assert "Original URL" in str(payload["content"])
+
+
+def test_build_draft_payload_full_publish_structure() -> None:
+    payload = build_draft_payload(_processed_item("full_publish"))
+
+    assert payload is not None
+    assert payload["status"] == "draft"
+    assert "Summary (EN)" in str(payload["content"])
+    assert "Sadržaj" in str(payload["content"])
+
+
+def test_build_draft_payload_skips_disabled() -> None:
+    assert build_draft_payload(_processed_item("disabled")) is None
 
 
 def test_create_draft_rejects_non_draft_default() -> None:

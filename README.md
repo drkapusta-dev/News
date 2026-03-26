@@ -1,41 +1,13 @@
 # poslovnipuls-pipeline
 
-Lean Python MVP pipeline for:
+Lean Python MVP pipeline for the first v0 pilot:
 
-1. Loading approved sources from `sources.yaml`
-2. Fetching RSS items
-3. Cleaning and storing items in SQLite
-4. Generating English summaries
-5. Generating Croatian localized summaries
-6. Creating WordPress **draft** posts through REST API
-7. Never auto-publishing
-
-## Project structure
-
-```text
-src/poslovnipuls_pipeline/
-  cli.py
-  config.py
-  db.py
-  dedupe.py
-  localization.py
-  logging_utils.py
-  models.py
-  owned_content.py
-  pipeline.py
-  repository.py
-  rss.py
-  summarization.py
-  wordpress.py
-scripts/
-  init_db.py
-tests/
-  test_dedupe.py
-  test_owned_content.py
-  test_rss.py
-  test_wordpress.py
-sources.yaml
-```
+1. Load approved sources from `sources.yaml`
+2. Ingest from `rss`, `medium_rss`, and `owned_manual`
+3. Deduplicate in SQLite across repeated runs
+4. Generate English + Croatian summaries
+5. Create WordPress **draft-only** posts
+6. Never auto-publish
 
 ## Setup
 
@@ -45,36 +17,48 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
-## Configure
+## First Pilot Run
 
-Edit `sources.yaml`:
+### 1) Configure
 
-- Add approved RSS feeds under `sources`
-- Use `rights_mode` with exactly one value per source:
-  - `summary_only`
-  - `full_publish`
-  - `disabled`
-- Keep `wordpress.default_status: draft`
-- Keep `database.path: data/app.db`
+- Review `sources.yaml` and keep exactly 3 pilot sources (external RSS, COTRUGLI medium_rss, owned_manual).
+- Ensure all sources have `rights_mode` in: `summary_only`, `full_publish`, `disabled`.
+- Keep `wordpress.default_status: draft`.
 
-## Initialize local DB
+### 2) Initialize DB
 
 ```bash
 python scripts/init_db.py --config sources.yaml
 ```
 
-## Run
+### 3) Healthcheck
 
 ```bash
-python -m poslovnipuls_pipeline.cli --config sources.yaml
+python -m poslovnipuls_pipeline.cli healthcheck --config sources.yaml
 ```
 
-## Notes on compliance and safety
+### 4) Ingest
 
-- The database stores `rights_mode` for each item.
-- WordPress payloads use `status='draft'` only.
-- The WordPress client rejects non-draft defaults and non-draft API responses.
-- Pipeline logs fetch and draft creation failures and continues processing.
+```bash
+python -m poslovnipuls_pipeline.cli ingest --config sources.yaml
+```
+
+### 5) Publish drafts
+
+```bash
+python -m poslovnipuls_pipeline.cli publish --config sources.yaml
+```
+
+### 6) Expected WordPress result
+
+- New posts appear in WordPress Admin as **Draft** only.
+- `summary_only` sources create compact Croatian-first drafts with attribution + original URL.
+- `full_publish` sources create fuller bilingual drafts.
+- SQLite stores `wordpress_post_id` and `wordpress_status`.
+
+### 7) Safe rerun
+
+Re-run ingest and publish commands anytime. Duplicate items are skipped via stable content hashing and unique `dedupe_key`.
 
 ## Testing
 
