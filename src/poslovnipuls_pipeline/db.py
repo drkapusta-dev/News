@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS items (
   content TEXT,
   summary_en TEXT,
   summary_hr TEXT,
-  summary_only INTEGER NOT NULL DEFAULT 1,
+  rights_mode TEXT NOT NULL DEFAULT 'summary_only',
   dedupe_key TEXT NOT NULL UNIQUE,
   wordpress_post_id INTEGER,
   wordpress_status TEXT,

@@ -15,7 +15,7 @@ def insert_item(conn: sqlite3.Connection, processed: ProcessedItem) -> bool:
             INSERT INTO items (
                 source_name, source_url, external_id, title, link,
                 published_at, content, summary_en, summary_hr,
-                summary_only, dedupe_key
+                rights_mode, dedupe_key
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
@@ -28,7 +28,7 @@ def insert_item(conn: sqlite3.Connection, processed: ProcessedItem) -> bool:
                 processed.item.content,
                 processed.summary_en,
                 processed.summary_hr,
-                int(processed.item.summary_only),
+                processed.item.rights_mode,
                 processed.dedupe_key,
             ),
         )

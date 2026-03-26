@@ -36,7 +36,7 @@ def build_draft_payload(item: ProcessedItem) -> dict[str, object]:
         "meta": {
             "source_name": item.item.source_name,
             "source_url": item.item.link,
-            "summary_only": item.item.summary_only,
+            "rights_mode": item.item.rights_mode,
         },
     }
 
@@ -72,5 +72,5 @@ def create_draft(config: WordPressConfig, item: ProcessedItem, timeout: int = 20
 
     status = str(data.get("status", "draft"))
     if status != "draft":
-        logger.warning("WordPress responded with non-draft status=%s; forcing draft workflow", status)
-    return WordPressDraftResult(post_id=int(data["id"]), status=status)
+        raise ValueError(f"Safety check failed: WordPress returned non-draft status={status!r}.")
+    return WordPressDraftResult(post_id=int(data["id"]), status="draft")

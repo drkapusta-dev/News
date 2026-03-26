@@ -12,7 +12,7 @@ class FeedItem:
     link: str
     published_at: str | None
     content: str
-    summary_only: bool
+    rights_mode: str
 
 
 @dataclass(slots=True)
