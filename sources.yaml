@@ -1,0 +1,15 @@
+database:
+  path: pipeline.db
+
+sources:
+  - name: Example Business News
+    rss_url: https://example.com/rss
+    language: en
+    summary_only: true
+    enabled: true
+
+wordpress:
+  base_url: https://your-wordpress-site.com
+  username: your-wp-username
+  app_password: your-app-password
+  default_status: draft
