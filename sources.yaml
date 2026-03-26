@@ -1,11 +1,11 @@
 database:
-  path: pipeline.db
+  path: data/app.db
 
 sources:
   - name: Example Business News
     rss_url: https://example.com/rss
     language: en
-    summary_only: true
+    rights_mode: summary_only
     enabled: true
 
 wordpress:

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+
+RightsMode = Literal["summary_only", "full_publish", "disabled"]
 
 
 @dataclass(slots=True)
@@ -11,7 +13,7 @@ class SourceConfig:
     name: str
     rss_url: str
     language: str = "en"
-    summary_only: bool = True
+    rights_mode: RightsMode = "summary_only"
     enabled: bool = True
 
 
@@ -30,18 +32,42 @@ class AppConfig:
     wordpress: WordPressConfig | None = None
 
 
+ALLOWED_RIGHTS_MODES = {"summary_only", "full_publish", "disabled"}
+
+
+def _parse_rights_mode(source: dict[str, Any]) -> RightsMode:
+    if "rights_mode" in source:
+        mode = str(source["rights_mode"]).strip()
+    elif "summary_only" in source:
+        mode = "summary_only" if bool(source["summary_only"]) else "full_publish"
+    else:
+        mode = "summary_only"
+
+    if mode not in ALLOWED_RIGHTS_MODES:
+        raise ValueError(
+            "Unsupported rights_mode for source "
+            f"{source.get('name', '<unknown>')!r}: {mode!r}. "
+            "Allowed: summary_only, full_publish, disabled."
+        )
+    return mode  # type: ignore[return-value]
+
+
 def _validate_sources(raw_sources: list[dict[str, Any]]) -> list[SourceConfig]:
     validated: list[SourceConfig] = []
     for source in raw_sources:
         if "name" not in source or "rss_url" not in source:
             raise ValueError("Each source must include 'name' and 'rss_url'.")
+
+        rights_mode = _parse_rights_mode(source)
+        enabled = bool(source.get("enabled", True)) and rights_mode != "disabled"
+
         validated.append(
             SourceConfig(
                 name=str(source["name"]),
                 rss_url=str(source["rss_url"]),
                 language=str(source.get("language", "en")),
-                summary_only=bool(source.get("summary_only", True)),
-                enabled=bool(source.get("enabled", True)),
+                rights_mode=rights_mode,
+                enabled=enabled,
             )
         )
     return validated
@@ -72,7 +98,7 @@ def load_config(config_path: str | Path = "sources.yaml") -> AppConfig:
         if wordpress.default_status != "draft":
             raise ValueError("WordPress default_status must remain 'draft'.")
 
-    db_path = Path(payload.get("database", {}).get("path", "pipeline.db"))
+    db_path = Path(payload.get("database", {}).get("path", "data/app.db"))
 
     return AppConfig(
         db_path=db_path,

@@ -40,7 +40,7 @@ def fetch_feed_items(source: SourceConfig, timeout: int = 20) -> list[FeedItem]:
                 link=link.strip(),
                 published_at=pub_date,
                 content=_strip_html(description),
-                summary_only=source.summary_only,
+                rights_mode=source.rights_mode,
             )
         )
     return items

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from .config import AppConfig
-from .db import create_schema, get_connection
+from .db import get_connection
 from .dedupe import make_dedupe_key
 from .localization import CroatianLocalizer
 from .models import ProcessedItem
@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 def run_pipeline(config: AppConfig) -> None:
-    create_schema(config.db_path)
     summarizer = Summarizer()
     localizer = CroatianLocalizer()
 

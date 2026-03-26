@@ -21,13 +21,17 @@ src/poslovnipuls_pipeline/
   localization.py
   logging_utils.py
   models.py
+  owned_content.py
   pipeline.py
   repository.py
   rss.py
   summarization.py
   wordpress.py
+scripts/
+  init_db.py
 tests/
   test_dedupe.py
+  test_owned_content.py
   test_rss.py
   test_wordpress.py
 sources.yaml
@@ -46,9 +50,18 @@ pip install -e .[dev]
 Edit `sources.yaml`:
 
 - Add approved RSS feeds under `sources`
-- Keep `summary_only: true` for external sources where full republishing is disallowed
-- Fill WordPress credentials
+- Use `rights_mode` with exactly one value per source:
+  - `summary_only`
+  - `full_publish`
+  - `disabled`
 - Keep `wordpress.default_status: draft`
+- Keep `database.path: data/app.db`
+
+## Initialize local DB
+
+```bash
+python scripts/init_db.py --config sources.yaml
+```
 
 ## Run
 
@@ -58,10 +71,10 @@ python -m poslovnipuls_pipeline.cli --config sources.yaml
 
 ## Notes on compliance and safety
 
-- The database stores `summary_only` flag for each item.
-- WordPress payloads are summary-based and include original source link.
-- WordPress client enforces `status='draft'`.
-- Pipeline logs fetch and publish failures and continues processing.
+- The database stores `rights_mode` for each item.
+- WordPress payloads use `status='draft'` only.
+- The WordPress client rejects non-draft defaults and non-draft API responses.
+- Pipeline logs fetch and draft creation failures and continues processing.
 
 ## Testing
 

@@ -33,10 +33,10 @@ def test_fetch_feed_items(monkeypatch) -> None:
 
     monkeypatch.setattr("poslovnipuls_pipeline.rss.urlopen", fake_urlopen)
 
-    source = SourceConfig(name="Example", rss_url="https://example.com/rss", summary_only=True)
+    source = SourceConfig(name="Example", rss_url="https://example.com/rss", rights_mode="summary_only")
     items = fetch_feed_items(source)
 
     assert len(items) == 1
     assert items[0].title == "News A"
     assert items[0].link == "https://example.com/a"
-    assert items[0].summary_only is True
+    assert items[0].rights_mode == "summary_only"

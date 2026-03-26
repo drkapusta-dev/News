@@ -14,7 +14,7 @@ def _processed_item() -> ProcessedItem:
         link="https://example.com/post",
         published_at=None,
         content="long content",
-        summary_only=True,
+        rights_mode="summary_only",
     )
     return ProcessedItem(
         item=feed_item,
@@ -39,6 +39,34 @@ def test_create_draft_rejects_non_draft_default() -> None:
         app_password="p",
         default_status="publish",
     )
+
+    with pytest.raises(ValueError):
+        create_draft(config, _processed_item())
+
+
+def test_create_draft_rejects_non_draft_api_response(monkeypatch) -> None:
+    config = WordPressConfig(
+        base_url="https://wp.test",
+        username="u",
+        app_password="p",
+        default_status="draft",
+    )
+
+    class _Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return None
+
+        def read(self) -> bytes:
+            return b'{"id": 1, "status": "publish"}'
+
+    def fake_urlopen(req, timeout: int):
+        assert timeout == 20
+        return _Response()
+
+    monkeypatch.setattr("poslovnipuls_pipeline.wordpress.urlopen", fake_urlopen)
 
     with pytest.raises(ValueError):
         create_draft(config, _processed_item())
