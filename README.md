@@ -1,67 +1,67 @@
 # poslovnipuls-pipeline
 
-Lean Python MVP pipeline for the first v0 pilot:
+Lean Python MVP pipeline (offline-friendly v0):
 
-1. Load approved sources from `sources.yaml`
+1. Load approved sources from `sources.json`
 2. Ingest from `rss`, `medium_rss`, and `owned_manual`
 3. Deduplicate in SQLite across repeated runs
-4. Generate English + Croatian summaries
+4. Generate English + Croatian summaries (local placeholder logic)
 5. Create WordPress **draft-only** posts
 6. Never auto-publish
 
-## Setup
+## Offline / restricted bootstrap (no package install required)
+
+> Prerequisite: Python 3.11+ available as `python3`.
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
+cp .env.example .env
+python3 scripts/init_db.py
+python3 scripts/healthcheck.py
+python3 scripts/import_owned_content.py
+python3 scripts/run_ingest.py
+python3 scripts/run_publish.py
 ```
 
-## First Pilot Run
+All commands are designed to run directly from repo root using only Python standard library modules.
 
-### 1) Configure
+## Required project files
 
-- Review `sources.yaml` and keep exactly 3 pilot sources (external RSS, COTRUGLI medium_rss, owned_manual).
-- Ensure all sources have `rights_mode` in: `summary_only`, `full_publish`, `disabled`.
-- Keep `wordpress.default_status: draft`.
+This repo ships with:
 
-### 2) Initialize DB
+- `README.md`
+- `.env.example`
+- `sources.json` (source registry)
+- `scripts/init_db.py`
+- `scripts/healthcheck.py`
+- `scripts/import_owned_content.py`
+- `scripts/run_ingest.py`
+- `scripts/run_publish.py`
+- `app/`
 
-```bash
-python scripts/init_db.py --config sources.yaml
-```
+## Configuration
 
-### 3) Healthcheck
+### Source registry (`sources.json`)
 
-```bash
-python -m poslovnipuls_pipeline.cli healthcheck --config sources.yaml
-```
+- Keep exactly 3 pilot sources (external RSS, COTRUGLI medium_rss, owned_manual) unless editorially expanded.
+- Ensure every source has `rights_mode` in: `summary_only`, `full_publish`, `disabled`.
+- Keep `wordpress.default_status` set to `draft`.
 
-### 4) Ingest
+### Environment variables (`.env`)
 
-```bash
-python -m poslovnipuls_pipeline.cli ingest --config sources.yaml
-```
+WordPress publishing is optional. If credentials are absent, publish step is skipped safely.
 
-### 5) Publish drafts
+## Healthcheck output
 
-```bash
-python -m poslovnipuls_pipeline.cli publish --config sources.yaml
-```
+`python3 scripts/healthcheck.py` reports:
 
-### 6) Expected WordPress result
+- `.env` presence
+- source registry presence + parse status
+- DB presence
+- WordPress credentials presence
+- owned content directory presence
 
-- New posts appear in WordPress Admin as **Draft** only.
-- `summary_only` sources create compact Croatian-first drafts with attribution + original URL.
-- `full_publish` sources create fuller bilingual drafts.
-- SQLite stores `wordpress_post_id` and `wordpress_status`.
+## Notes on safety
 
-### 7) Safe rerun
-
-Re-run ingest and publish commands anytime. Duplicate items are skipped via stable content hashing and unique `dedupe_key`.
-
-## Testing
-
-```bash
-pytest
-```
+- WordPress publishing path is draft-only by payload and response validation.
+- If WordPress credentials are missing, nothing is posted.
+- Re-running ingest/publish is safe due to stable dedupe keys and DB uniqueness.

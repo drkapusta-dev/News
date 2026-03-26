@@ -9,7 +9,7 @@ from .pipeline import healthcheck, run_ingest, run_pipeline, run_publish
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run poslovnipuls editorial pipeline")
-    parser.add_argument("--config", default="sources.yaml", help="Path to config YAML")
+    parser.add_argument("--config", default="sources.json", help="Path to JSON source registry")
     parser.add_argument(
         "command",
         nargs="?",
