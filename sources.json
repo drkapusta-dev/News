@@ -1,0 +1,37 @@
+{
+  "database": {
+    "path": "data/app.db"
+  },
+  "sources": [
+    {
+      "name": "External Pilot RSS",
+      "source_type": "rss",
+      "rss_url": "https://example.com/rss",
+      "language": "en",
+      "rights_mode": "summary_only",
+      "enabled": true
+    },
+    {
+      "name": "COTRUGLI Medium",
+      "source_type": "medium_rss",
+      "rss_url": "https://medium.com/feed/cotrugli-business-school",
+      "language": "en",
+      "rights_mode": "summary_only",
+      "enabled": true
+    },
+    {
+      "name": "PoslovniPuls Owned",
+      "source_type": "owned_manual",
+      "content_dir": "content/owned",
+      "language": "hr",
+      "rights_mode": "full_publish",
+      "enabled": true
+    }
+  ],
+  "wordpress": {
+    "base_url": "",
+    "username": "",
+    "app_password": "",
+    "default_status": "draft"
+  }
+}

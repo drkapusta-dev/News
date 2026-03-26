@@ -10,17 +10,19 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from poslovnipuls_pipeline.config import load_config
-from poslovnipuls_pipeline.db import create_schema
+from poslovnipuls_pipeline.logging_utils import configure_logging
+from poslovnipuls_pipeline.pipeline import run_ingest
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Initialize local SQLite database schema")
+    parser = argparse.ArgumentParser(description="Run ingest step")
     parser.add_argument("--config", default="sources.json", help="Path to JSON source registry")
     args = parser.parse_args()
 
+    configure_logging()
     config = load_config(args.config)
-    create_schema(config.db_path)
-    print(f"Initialized database at {config.db_path}")
+    inserted = run_ingest(config)
+    print(f"Ingest completed. Inserted: {inserted}")
 
 
 if __name__ == "__main__":

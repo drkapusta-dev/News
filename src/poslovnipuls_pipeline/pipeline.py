@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from .config import AppConfig
+from .config import AppConfig, load_config
 from .db import get_connection
 from .dedupe import make_dedupe_key
 from .localization import CroatianLocalizer
@@ -87,25 +87,39 @@ def run_pipeline(config: AppConfig) -> None:
     run_publish(config)
 
 
-def healthcheck(config: AppConfig, config_path: str | Path = "sources.yaml") -> list[str]:
+def healthcheck(config: AppConfig | None = None, config_path: str | Path = "sources.json") -> list[str]:
     messages: list[str] = []
+    registry_path = Path(config_path)
 
     dotenv_path = Path(".env")
-    messages.append(".env loaded: yes" if dotenv_path.exists() else ".env loaded: no (.env file not found)")
+    messages.append(".env present: yes" if dotenv_path.exists() else ".env present: no (.env file not found)")
 
-    with get_connection(config.db_path) as conn:
-        conn.execute("SELECT 1")
-    messages.append(f"DB reachable: yes ({config.db_path})")
+    if registry_path.exists():
+        messages.append(f"source registry present: yes ({registry_path})")
+    else:
+        messages.append(f"source registry present: no ({registry_path} missing)")
+        return messages
 
-    messages.append(f"sources.yaml valid: yes ({config_path})")
+    if config is None:
+        try:
+            config = load_config(registry_path)
+            messages.append("source registry parse: ok")
+        except Exception as exc:  # noqa: BLE001
+            messages.append(f"source registry parse: failed ({exc})")
+            return messages
+
+    if config.db_path.exists():
+        messages.append(f"DB present: yes ({config.db_path})")
+    else:
+        messages.append(f"DB present: no ({config.db_path} missing; run scripts/init_db.py)")
 
     owned_dirs = [s.content_dir for s in config.sources if s.source_type == "owned_manual" and s.content_dir is not None]
     if owned_dirs:
         for directory in owned_dirs:
             exists = directory.exists()
-            messages.append(f"owned content directory exists: {'yes' if exists else 'no'} ({directory})")
+            messages.append(f"owned content directory present: {'yes' if exists else 'no'} ({directory})")
     else:
-        messages.append("owned content directory exists: no owned_manual source configured")
+        messages.append("owned content directory present: no owned_manual source configured")
 
     messages.append("WordPress credentials present: yes" if config.wordpress else "WordPress credentials present: no")
     return messages

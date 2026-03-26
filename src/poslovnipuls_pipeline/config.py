@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,14 +120,25 @@ def _load_dotenv(path: Path = Path(".env")) -> dict[str, str]:
     return env
 
 
-def load_config(config_path: str | Path = "sources.yaml") -> AppConfig:
-    path = Path(config_path)
-    try:
-        import yaml  # type: ignore
-    except ModuleNotFoundError as exc:
-        raise RuntimeError("PyYAML is required to load sources.yaml") from exc
+def _load_registry_payload(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(f"Source registry not found: {path}")
 
-    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if path.suffix.lower() != ".json":
+        raise ValueError(
+            "Only JSON source registry is supported in offline mode. "
+            f"Please convert {path.name} to JSON."
+        )
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Config root must be a JSON object.")
+    return payload
+
+
+def load_config(config_path: str | Path = "sources.json") -> AppConfig:
+    path = Path(config_path)
+    payload = _load_registry_payload(path)
 
     raw_sources = payload.get("sources", [])
     if not isinstance(raw_sources, list):
