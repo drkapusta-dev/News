@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 
 from poslovnipuls_pipeline.config import SourceConfig
 from poslovnipuls_pipeline.rss import fetch_feed_items
@@ -40,3 +41,18 @@ def test_fetch_feed_items(monkeypatch) -> None:
     assert items[0].title == "News A"
     assert items[0].link == "https://example.com/a"
     assert items[0].rights_mode == "summary_only"
+
+
+def test_fetch_feed_items_from_local_file_fixture() -> None:
+    source = SourceConfig(
+        name="Local Fixture",
+        source_type="rss",
+        rss_url=str(Path("tests/fixtures/local_rss.xml")),
+        rights_mode="summary_only",
+    )
+
+    items = fetch_feed_items(source)
+
+    assert len(items) == 1
+    assert items[0].external_id == "local-fixture-001"
+    assert items[0].title == "Local Fixture News Item"

@@ -4,17 +4,9 @@
   },
   "sources": [
     {
-      "name": "External Pilot RSS",
+      "name": "Local Pilot RSS Fixture",
       "source_type": "rss",
-      "rss_url": "https://example.com/rss",
-      "language": "en",
-      "rights_mode": "summary_only",
-      "enabled": true
-    },
-    {
-      "name": "COTRUGLI Medium",
-      "source_type": "medium_rss",
-      "rss_url": "https://medium.com/feed/cotrugli-business-school",
+      "rss_url": "tests/fixtures/local_rss.xml",
       "language": "en",
       "rights_mode": "summary_only",
       "enabled": true
@@ -26,6 +18,14 @@
       "language": "hr",
       "rights_mode": "full_publish",
       "enabled": true
+    },
+    {
+      "name": "Disabled Validation Source",
+      "source_type": "rss",
+      "rss_url": "https://example.com/disabled-feed",
+      "language": "en",
+      "rights_mode": "disabled",
+      "enabled": false
     }
   ],
   "wordpress": {
