@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from typing import Iterable
 from urllib.request import urlopen
 
@@ -15,14 +16,25 @@ def _strip_html(text: str) -> str:
     return " ".join(text.replace("<", " ").replace(">", " ").split())
 
 
+def _read_feed_content(rss_url: str, timeout: int) -> bytes:
+    if rss_url.startswith("file://"):
+        return Path(rss_url.removeprefix("file://")).read_bytes()
+
+    local_path = Path(rss_url)
+    if local_path.exists() and local_path.is_file():
+        return local_path.read_bytes()
+
+    with urlopen(rss_url, timeout=timeout) as response:  # noqa: S310
+        return response.read()
+
+
 def fetch_feed_items(source: SourceConfig, timeout: int = 20) -> list[FeedItem]:
     if source.source_type not in {"rss", "medium_rss"}:
         raise ValueError(f"Unsupported feed fetch for source_type={source.source_type!r}")
     if not source.rss_url:
         raise ValueError(f"Missing rss_url for source {source.name!r}")
 
-    with urlopen(source.rss_url, timeout=timeout) as response:  # noqa: S310
-        content = response.read()
+    content = _read_feed_content(source.rss_url, timeout=timeout)
 
     root = ET.fromstring(content)
     items: list[FeedItem] = []

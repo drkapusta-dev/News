@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Local Pilot Feed</title>
+    <link>https://local.test/feed</link>
+    <description>Offline fixture feed for restricted environments.</description>
+    <item>
+      <title>Local Fixture News Item</title>
+      <link>https://local.test/posts/local-fixture-news-item</link>
+      <guid>local-fixture-001</guid>
+      <pubDate>Thu, 26 Mar 2026 09:00:00 GMT</pubDate>
+      <description>This fixture item verifies offline RSS ingest for the pilot path.</description>
+    </item>
+  </channel>
+</rss>
